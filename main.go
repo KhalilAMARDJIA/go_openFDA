@@ -206,10 +206,17 @@ func find_meta_data() (string, int, int) {
 func main() {
 	meta_query, skips_required, limit_int := find_meta_data() // change content to multi pages one
 
+	var query_array []string
 	// Paging TO DO
 	for i := 0; i <= skips_required; i++ {
 		skip_string := strconv.Itoa(i * limit_int)
-		fmt.Println(meta_query + "&skip" + skip_string)
+		query_page := meta_query + "&skip" + skip_string
+		query_array = append(query_array, query_page)
+
+	}
+
+	for i, s := range query_array {
+		fmt.Println(i, s)
 	}
 
 	// responseData := query_to_json(full_query)
