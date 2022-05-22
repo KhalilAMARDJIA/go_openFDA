@@ -193,13 +193,15 @@ func find_meta_data() (openFDA_event_schema, int) {
 		fmt.Println(err)
 	}
 	if content.Meta.Results.Total <= limit_int {
+		var skips_required int
+		skips_required = 0
+		return content, skips_required // skips_required variable
 	} else {
-		fmt.Println("more than 1000 matches were found")
+		var skips_required int
+		skips_required = content.Meta.Results.Total / limit_int
+		return content, skips_required // skips_required variable
 
-		skips_required := content.Meta.Results.Total / limit_int
-		fmt.Println(skips_required)
 	}
-	return content, content.Meta.Results.Total / limit_int // skips_required variable
 
 }
 
