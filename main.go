@@ -173,8 +173,14 @@ func main() {
 	// Write raw data into json file
 	ioutil.WriteFile("openFDA_raw_data.json", responseData, os.ModePerm)
 
+	// Convert byte to struct
 	content := openFDA_event{}
 	json.Unmarshal([]byte(responseData), &content)
+
+	// Show metadata in console
+
+	fmt.Println("Results found: ", content.Meta.Results.Total, " Last update in: ", content.Meta.LastUpdated)
+
 	for i := 0; i < len(content.Results); i++ {
 		fmt.Printf("%+v\n", content.Results[i].Device[0].BrandName)
 	}
