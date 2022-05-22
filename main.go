@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -181,8 +182,26 @@ func main() {
 
 	fmt.Println("Results found: ", content.Meta.Results.Total, " Last update in: ", content.Meta.LastUpdated)
 
-	for i := 0; i < len(content.Results); i++ {
-		fmt.Printf("%+v\n", content.Results[i].Device[0].BrandName)
+	if err != nil {
+		log.Fatalf("failed creating file: %s", err)
+	}
+
+	csvFile, err := os.Create("./openFDA_data.csv")
+
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer csvFile.Close()
+
+	writer := csv.NewWriter(csvFile)
+
+	for _, usance := range content.Results {
+		var row []string
+		row = append(row, usance.ReportNumber)
+		row = append(row, usance.Device[0].BrandName)
+		row = append(row, usance.Patient[0].PatientProblems...)
+		writer.Write(row)
+		writer.Flush() // Data flush
 	}
 
 }
