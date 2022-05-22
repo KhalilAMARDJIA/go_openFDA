@@ -180,7 +180,7 @@ func query_construct() string {
 	return full_query
 }
 
-func find_meta_data() (openFDA_event_schema, int) {
+func find_meta_data() int {
 	full_query := query_construct()
 	responseData := query_to_json(full_query)
 	content := openFDA_event_schema{}
@@ -195,22 +195,25 @@ func find_meta_data() (openFDA_event_schema, int) {
 	if content.Meta.Results.Total <= limit_int {
 		var skips_required int
 		skips_required = 0
-		return content, skips_required // skips_required variable
+		return skips_required // skips_required variable
 	} else {
 		var skips_required int
 		skips_required = content.Meta.Results.Total / limit_int
-		return content, skips_required // skips_required variable
+		return skips_required // skips_required variable
 
 	}
 
 }
 
 func main() {
-	content, skips_required := find_meta_data() // change content to multi pages one
+	skips_required := find_meta_data() // change content to multi pages one
 
 	fmt.Println(skips_required)
 	// Paging TO DO
-
+	full_query := query_construct() // add same query as find_meta_data without requiring to re entre the query
+	responseData := query_to_json(full_query)
+	content := openFDA_event_schema{}
+	json.Unmarshal([]byte(responseData), &content)
 	csvFile, err := os.Create("./output_data/openFDA_data.csv")
 	if err != nil {
 		fmt.Println(err)
