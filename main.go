@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -9,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 )
 
 const baseURL = "https://api.fda.gov/device/event.json?search="
@@ -180,9 +178,9 @@ func query_construct() string {
 	return full_query
 }
 
-func find_meta_data() int {
-	full_query := query_construct()
-	responseData := query_to_json(full_query)
+func find_meta_data() (string, int, int) {
+	meta_query := query_construct()
+	responseData := query_to_json(meta_query)
 	content := openFDA_event_schema{}
 	json.Unmarshal([]byte(responseData), &content)
 
@@ -195,50 +193,53 @@ func find_meta_data() int {
 	if content.Meta.Results.Total <= limit_int {
 		var skips_required int
 		skips_required = 0
-		return skips_required // skips_required variable
+		return meta_query, skips_required, limit_int // skips_required variable
 	} else {
 		var skips_required int
 		skips_required = content.Meta.Results.Total / limit_int
-		return skips_required // skips_required variable
+		return meta_query, skips_required, limit_int // skips_required variable
 
 	}
 
 }
 
 func main() {
-	skips_required := find_meta_data() // change content to multi pages one
+	meta_query, skips_required, limit_int := find_meta_data() // change content to multi pages one
 
-	fmt.Println(skips_required)
 	// Paging TO DO
-	full_query := query_construct() // add same query as find_meta_data without requiring to re entre the query
-	responseData := query_to_json(full_query)
-	content := openFDA_event_schema{}
-	json.Unmarshal([]byte(responseData), &content)
-	csvFile, err := os.Create("./output_data/openFDA_data.csv")
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer csvFile.Close()
-
-	writer := csv.NewWriter(csvFile)
-
-	// Define header row
-	headerRow := []string{
-		"report_number\tdate_received\tmanufacturer_name\tbrand_name\tpatient_problems\tproduct_problems\t",
+	for i := 0; i <= skips_required; i++ {
+		skip_string := strconv.Itoa(i * limit_int)
+		fmt.Println(meta_query + "&skip" + skip_string)
 	}
 
-	writer.Write(headerRow)
-	for _, usance := range content.Results {
-		writer.Comma = '\t'
-		var row []string
+	// responseData := query_to_json(full_query)
+	// content := openFDA_event_schema{}
+	// json.Unmarshal([]byte(responseData), &content)
+	// csvFile, err := os.Create("./output_data/openFDA_data.csv")
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+	// defer csvFile.Close()
 
-		row = append(row, usance.ReportNumber)
-		row = append(row, usance.DateReceived)
-		row = append(row, usance.Device[0].ManufacturerDName)
-		row = append(row, usance.Device[0].BrandName)
-		row = append(row, strings.Join(usance.Patient[0].PatientProblems, "|"))
-		row = append(row, strings.Join(usance.ProductProblems, "|"))
-		writer.Write(row)
-		writer.Flush() // Data flush
-	}
+	// writer := csv.NewWriter(csvFile)
+
+	// // Define header row
+	// headerRow := []string{
+	// 	"report_number\tdate_received\tmanufacturer_name\tbrand_name\tpatient_problems\tproduct_problems\t",
+	// }
+
+	// writer.Write(headerRow)
+	// for _, usance := range content.Results {
+	// 	writer.Comma = '\t'
+	// 	var row []string
+
+	// 	row = append(row, usance.ReportNumber)
+	// 	row = append(row, usance.DateReceived)
+	// 	row = append(row, usance.Device[0].ManufacturerDName)
+	// 	row = append(row, usance.Device[0].BrandName)
+	// 	row = append(row, strings.Join(usance.Patient[0].PatientProblems, "|"))
+	// 	row = append(row, strings.Join(usance.ProductProblems, "|"))
+	// 	writer.Write(row)
+	// 	writer.Flush() // Data flush
+	// }
 }
