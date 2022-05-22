@@ -179,7 +179,7 @@ func main() {
 
 	// Show metadata in console
 
-	fmt.Println("Results found: ", content.Meta.Results.Total, " Last update in: ")
+	fmt.Println("Results found: ", content.Meta.Results.Total, " Last update in: ", content.Meta.LastUpdated)
 
 	for i := 0; i < len(content.Results); i++ {
 		fmt.Printf("%+v\n", content.Results[i].Device[0].BrandName)
