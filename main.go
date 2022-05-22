@@ -8,10 +8,12 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 )
 
 const baseURL = "https://api.fda.gov/device/event.json?search="
+const limit = "1000"
 
 type openFDA_event struct {
 	Meta struct {
@@ -159,7 +161,7 @@ func main() {
 	var query string
 	fmt.Scanln(&query)
 	var full_query string
-	full_query = baseURL + query + "&limit=1000"
+	full_query = baseURL + query + "&limit=" + limit
 
 	// openFDA API request
 	response, err := http.Get(full_query)
@@ -185,6 +187,15 @@ func main() {
 
 	if err != nil {
 		log.Fatalf("failed creating file: %s", err)
+	}
+
+	// Paging TO DO
+	intConst, err := strconv.Atoi(limit) // convert limit string to int
+
+	if content.Meta.Results.Total <= intConst {
+		fmt.Println("ok")
+	} else {
+		fmt.Println(" not ok")
 	}
 
 	csvFile, err := os.Create("./output_data/openFDA_data.csv")
@@ -215,5 +226,4 @@ func main() {
 		writer.Write(row)
 		writer.Flush() // Data flush
 	}
-
 }
