@@ -180,31 +180,33 @@ func query_construct() string {
 	return full_query
 }
 
-func main() {
+func find_meta_data() (openFDA_event_schema, int) {
 	full_query := query_construct()
-
 	responseData := query_to_json(full_query)
-
-	// Write raw data into json file
-	ioutil.WriteFile("./output_data/openFDA_raw_data.json", responseData, os.ModePerm)
-
-	// Convert byte to struct
 	content := openFDA_event_schema{}
 	json.Unmarshal([]byte(responseData), &content)
 
 	// Show metadata in console
-
 	fmt.Println("Results found: ", content.Meta.Results.Total, " Last update in: ", content.Meta.LastUpdated)
-
-	// Paging TO DO
 	limit_int, err := strconv.Atoi(limit) // convert limit string to int
-
+	if err != nil {
+		fmt.Println(err)
+	}
 	if content.Meta.Results.Total <= limit_int {
 	} else {
-		fmt.Println("more than 100 matches were found")
+		fmt.Println("more than 1000 matches were found")
 		skips_required := content.Meta.Results.Total/limit_int + 1
 		fmt.Println(skips_required)
 	}
+	return content, limit_int
+
+}
+
+func main() {
+	content, limit_int := find_meta_data()
+
+	fmt.Println(limit_int)
+	// Paging TO DO
 
 	csvFile, err := os.Create("./output_data/openFDA_data.csv")
 
