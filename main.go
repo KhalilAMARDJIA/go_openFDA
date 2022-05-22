@@ -206,13 +206,12 @@ func find_meta_data() (openFDA_event_schema, int) {
 }
 
 func main() {
-	content, skips_required := find_meta_data()
+	content, skips_required := find_meta_data() // change content to multi pages one
 
 	fmt.Println(skips_required)
 	// Paging TO DO
 
 	csvFile, err := os.Create("./output_data/openFDA_data.csv")
-
 	if err != nil {
 		fmt.Println(err)
 	}
