@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 )
 
 const baseURL = "https://api.fda.gov/device/event.json?search="
@@ -196,10 +197,13 @@ func main() {
 	writer := csv.NewWriter(csvFile)
 
 	for _, usance := range content.Results {
+		writer.Comma = '\t'
 		var row []string
 		row = append(row, usance.ReportNumber)
+		row = append(row, usance.DateReceived)
+		row = append(row, usance.Device[0].ManufacturerDName)
 		row = append(row, usance.Device[0].BrandName)
-		row = append(row, usance.Patient[0].PatientProblems...)
+		row = append(row, strings.Join(usance.Patient[0].PatientProblems, "|"))
 		writer.Write(row)
 		writer.Flush() // Data flush
 	}
