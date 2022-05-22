@@ -1,12 +1,14 @@
 package main
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 )
 
 const baseURL = "https://api.fda.gov/device/event.json?search="
@@ -171,7 +173,7 @@ func main() {
 	}
 
 	// Write raw data into json file
-	ioutil.WriteFile("openFDA_raw_data.json", responseData, os.ModePerm)
+	ioutil.WriteFile("./output_data/openFDA_raw_data.json", responseData, os.ModePerm)
 
 	// Convert byte to struct
 	content := openFDA_event{}
@@ -181,8 +183,37 @@ func main() {
 
 	fmt.Println("Results found: ", content.Meta.Results.Total, " Last update in: ", content.Meta.LastUpdated)
 
-	for i := 0; i < len(content.Results); i++ {
-		fmt.Printf("%+v\n", content.Results[i].Device[0].BrandName)
+	if err != nil {
+		log.Fatalf("failed creating file: %s", err)
+	}
+
+	csvFile, err := os.Create("./output_data/openFDA_data.csv")
+
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer csvFile.Close()
+
+	writer := csv.NewWriter(csvFile)
+
+	// Define header row
+	headerRow := []string{
+		"report_number\tdate_received\tmanufacturer_name\tbrand_name\tpatient_problems\tproduct_problems\t",
+	}
+
+	writer.Write(headerRow)
+	for _, usance := range content.Results {
+		writer.Comma = '\t'
+		var row []string
+
+		row = append(row, usance.ReportNumber)
+		row = append(row, usance.DateReceived)
+		row = append(row, usance.Device[0].ManufacturerDName)
+		row = append(row, usance.Device[0].BrandName)
+		row = append(row, strings.Join(usance.Patient[0].PatientProblems, "|"))
+		row = append(row, strings.Join(usance.ProductProblems, "|"))
+		writer.Write(row)
+		writer.Flush() // Data flush
 	}
 
 }
