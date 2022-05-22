@@ -195,17 +195,18 @@ func find_meta_data() (openFDA_event_schema, int) {
 	if content.Meta.Results.Total <= limit_int {
 	} else {
 		fmt.Println("more than 1000 matches were found")
-		skips_required := content.Meta.Results.Total/limit_int + 1
+
+		skips_required := content.Meta.Results.Total / limit_int
 		fmt.Println(skips_required)
 	}
-	return content, limit_int
+	return content, content.Meta.Results.Total / limit_int // skips_required variable
 
 }
 
 func main() {
-	content, limit_int := find_meta_data()
+	content, skips_required := find_meta_data()
 
-	fmt.Println(limit_int)
+	fmt.Println(skips_required)
 	// Paging TO DO
 
 	csvFile, err := os.Create("./output_data/openFDA_data.csv")
