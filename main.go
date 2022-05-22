@@ -196,14 +196,22 @@ func main() {
 
 	writer := csv.NewWriter(csvFile)
 
+	// Define header row
+	headerRow := []string{
+		"report_number\tdate_received\tmanufacturer_name\tbrand_name\tpatient_problems\tproduct_problems\t",
+	}
+
+	writer.Write(headerRow)
 	for _, usance := range content.Results {
 		writer.Comma = '\t'
 		var row []string
+
 		row = append(row, usance.ReportNumber)
 		row = append(row, usance.DateReceived)
 		row = append(row, usance.Device[0].ManufacturerDName)
 		row = append(row, usance.Device[0].BrandName)
 		row = append(row, strings.Join(usance.Patient[0].PatientProblems, "|"))
+		row = append(row, strings.Join(usance.ProductProblems, "|"))
 		writer.Write(row)
 		writer.Flush() // Data flush
 	}
