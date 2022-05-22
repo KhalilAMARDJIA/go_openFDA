@@ -15,7 +15,7 @@ import (
 const baseURL = "https://api.fda.gov/device/event.json?search="
 const limit = "1000"
 
-type openFDA_event struct {
+type openFDA_event_schema struct {
 	Meta struct {
 		Disclaimer  string `json:"disclaimer"`
 		Terms       string `json:"terms"`
@@ -155,16 +155,10 @@ type openFDA_event struct {
 	} `json:"results"`
 }
 
-func main() {
-	// query construct
-	fmt.Println("Enter openFDA query: ")
-	var query string
-	fmt.Scanln(&query)
-	var full_query string
-	full_query = baseURL + query + "&limit=" + limit
+func query_to_json(query string) []byte {
 
 	// openFDA API request
-	response, err := http.Get(full_query)
+	response, err := http.Get(query)
 	if err != nil {
 		fmt.Print(err.Error())
 		os.Exit(1)
@@ -173,29 +167,43 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	return responseData
+}
+
+func query_construct() string {
+	// query construct
+	fmt.Println("Enter openFDA query: ")
+	var query string
+	fmt.Scanln(&query)
+	var full_query string
+	full_query = baseURL + query + "&limit=" + limit
+	return full_query
+}
+
+func main() {
+	full_query := query_construct()
+
+	responseData := query_to_json(full_query)
 
 	// Write raw data into json file
 	ioutil.WriteFile("./output_data/openFDA_raw_data.json", responseData, os.ModePerm)
 
 	// Convert byte to struct
-	content := openFDA_event{}
+	content := openFDA_event_schema{}
 	json.Unmarshal([]byte(responseData), &content)
 
 	// Show metadata in console
 
 	fmt.Println("Results found: ", content.Meta.Results.Total, " Last update in: ", content.Meta.LastUpdated)
 
-	if err != nil {
-		log.Fatalf("failed creating file: %s", err)
-	}
-
 	// Paging TO DO
-	intConst, err := strconv.Atoi(limit) // convert limit string to int
+	limit_int, err := strconv.Atoi(limit) // convert limit string to int
 
-	if content.Meta.Results.Total <= intConst {
-		fmt.Println("ok")
+	if content.Meta.Results.Total <= limit_int {
 	} else {
-		fmt.Println(" not ok")
+		fmt.Println("more than 100 matches were found")
+		skips_required := content.Meta.Results.Total/limit_int + 1
+		fmt.Println(skips_required)
 	}
 
 	csvFile, err := os.Create("./output_data/openFDA_data.csv")
