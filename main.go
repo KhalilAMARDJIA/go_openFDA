@@ -187,7 +187,7 @@ func find_meta_data() (string, int, int) {
 	json.Unmarshal([]byte(responseData), &content)
 
 	// Show metadata in console
-	fmt.Println("Results found: ", content.Meta.Results.Total, " Last update in: ", content.Meta.LastUpdated)
+	fmt.Print("Results found: ", content.Meta.Results.Total, " Last update in: ", content.Meta.LastUpdated, "\n", "Warning only the first 27000th records will be taken into account (openFDA paging limit)")
 	limit_int, err := strconv.Atoi(limit) // convert limit string to int
 	if err != nil {
 		fmt.Println(err)
@@ -228,9 +228,8 @@ func get_data() []openFDA_event_schema {
 }
 
 func main() {
-	var data []openFDA_event_schema
 
-	data = get_data()
+	data := get_data()
 
 	csvFile, err := os.Create("./output_data/openFDA_data.csv")
 	if err != nil {
@@ -250,7 +249,6 @@ func main() {
 		for _, usance := range data_page.Results {
 			writer.Comma = '\t'
 			var row []string
-
 			row = append(row, usance.ReportNumber)
 			row = append(row, usance.DateReceived)
 			row = append(row, usance.Device[0].ManufacturerDName)
@@ -261,5 +259,4 @@ func main() {
 			writer.Flush() // Data flush
 		}
 	}
-
 }
