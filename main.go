@@ -15,7 +15,7 @@ import (
 const baseURL = "https://api.fda.gov/device/event.json?search="
 const limit = "1000"
 
-type openFDA_event struct {
+type openFDA_event_schema struct {
 	Meta struct {
 		Disclaimer  string `json:"disclaimer"`
 		Terms       string `json:"terms"`
@@ -155,16 +155,10 @@ type openFDA_event struct {
 	} `json:"results"`
 }
 
-func main() {
-	// query construct
-	fmt.Println("Enter openFDA query: ")
-	var query string
-	fmt.Scanln(&query)
-	var full_query string
-	full_query = baseURL + query + "&limit=" + limit
+func query_to_json(query string) []byte {
 
 	// openFDA API request
-	response, err := http.Get(full_query)
+	response, err := http.Get(query)
 	if err != nil {
 		fmt.Print(err.Error())
 		os.Exit(1)
@@ -173,33 +167,71 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	return responseData
+}
 
-	// Write raw data into json file
-	ioutil.WriteFile("./output_data/openFDA_raw_data.json", responseData, os.ModePerm)
+func query_construct() string {
+	// query construct
+	fmt.Println("Enter openFDA query: ")
+	var query string
+	fmt.Scanln(&query)
+	var full_query string
+	full_query = baseURL + query + "&limit=" + limit
+	return full_query
+}
 
-	// Convert byte to struct
-	content := openFDA_event{}
+func find_meta_data() (string, int, int) {
+	meta_query := query_construct()
+	responseData := query_to_json(meta_query)
+	content := openFDA_event_schema{}
 	json.Unmarshal([]byte(responseData), &content)
 
 	// Show metadata in console
-
-	fmt.Println("Results found: ", content.Meta.Results.Total, " Last update in: ", content.Meta.LastUpdated)
-
+	fmt.Print("Results found: ", content.Meta.Results.Total, " Last update in: ", content.Meta.LastUpdated, "\n", "Warning only the first 27000th records will be taken into account (openFDA paging limit)")
+	limit_int, err := strconv.Atoi(limit) // convert limit string to int
 	if err != nil {
-		log.Fatalf("failed creating file: %s", err)
+		fmt.Println(err)
 	}
 
-	// Paging TO DO
-	intConst, err := strconv.Atoi(limit) // convert limit string to int
-
-	if content.Meta.Results.Total <= intConst {
-		fmt.Println("ok")
+	if content.Meta.Results.Total <= limit_int {
+		var skips_required int
+		skips_required = 0
+		return meta_query, skips_required, limit_int // skips_required variable
 	} else {
-		fmt.Println(" not ok")
+		var skips_required int
+		skips_required = content.Meta.Results.Total / limit_int
+		return meta_query, skips_required, limit_int // skips_required variable
+
 	}
+}
+
+func get_data() []openFDA_event_schema {
+	meta_query, skips_required, limit_int := find_meta_data()
+	var query_array []string
+	var responseData []byte
+
+	for i := 0; i <= skips_required; i++ {
+		skip_string := strconv.Itoa(i * limit_int)
+		query_per_page := meta_query + "&skip=" + skip_string
+		query_array = append(query_array, query_per_page)
+	}
+	var all_content []openFDA_event_schema
+	for _, query_per_page := range query_array {
+		responseData = query_to_json(query_per_page)
+		content := openFDA_event_schema{}
+		json.Unmarshal([]byte(responseData), &content)
+
+		all_content = append(all_content, content)
+	}
+
+	return all_content
+}
+
+func main() {
+
+	data := get_data()
 
 	csvFile, err := os.Create("./output_data/openFDA_data.csv")
-
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -209,21 +241,27 @@ func main() {
 
 	// Define header row
 	headerRow := []string{
-		"report_number\tdate_received\tmanufacturer_name\tbrand_name\tpatient_problems\tproduct_problems\t",
+		"report_number\tdate_received\tmanufacturer_name\tbrand_name\tpatient_problems\tproduct_problems\ttext\t",
 	}
-
 	writer.Write(headerRow)
-	for _, usance := range content.Results {
-		writer.Comma = '\t'
-		var row []string
 
-		row = append(row, usance.ReportNumber)
-		row = append(row, usance.DateReceived)
-		row = append(row, usance.Device[0].ManufacturerDName)
-		row = append(row, usance.Device[0].BrandName)
-		row = append(row, strings.Join(usance.Patient[0].PatientProblems, "|"))
-		row = append(row, strings.Join(usance.ProductProblems, "|"))
-		writer.Write(row)
-		writer.Flush() // Data flush
+	for _, data_page := range data {
+		for _, usance := range data_page.Results {
+			writer.Comma = '\t'
+			var row []string
+			var nest_row []string
+			row = append(row, usance.ReportNumber)
+			row = append(row, usance.DateReceived)
+			row = append(row, usance.Device[0].ManufacturerDName)
+			row = append(row, usance.Device[0].BrandName)
+			row = append(row, strings.Join(usance.Patient[0].PatientProblems, "|"))
+			row = append(row, strings.Join(usance.ProductProblems, "|"))
+			for _, txt := range usance.MdrText {
+				nest_row = append(nest_row, txt.Text)
+			}
+			row = append(row, strings.Join(nest_row, "|"))
+			writer.Write(row)
+			writer.Flush() // Data flush
+		}
 	}
 }
