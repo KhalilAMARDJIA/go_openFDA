@@ -241,7 +241,7 @@ func main() {
 
 	// Define header row
 	headerRow := []string{
-		"report_number\tdate_received\tmanufacturer_name\tbrand_name\tpatient_problems\tproduct_problems\t",
+		"report_number\tdate_received\tmanufacturer_name\tbrand_name\tpatient_problems\tproduct_problems\ttext\t",
 	}
 	writer.Write(headerRow)
 
@@ -249,12 +249,17 @@ func main() {
 		for _, usance := range data_page.Results {
 			writer.Comma = '\t'
 			var row []string
+			var nest_row []string
 			row = append(row, usance.ReportNumber)
 			row = append(row, usance.DateReceived)
 			row = append(row, usance.Device[0].ManufacturerDName)
 			row = append(row, usance.Device[0].BrandName)
 			row = append(row, strings.Join(usance.Patient[0].PatientProblems, "|"))
 			row = append(row, strings.Join(usance.ProductProblems, "|"))
+			for _, txt := range usance.MdrText {
+				nest_row = append(nest_row, txt.Text)
+			}
+			row = append(row, strings.Join(nest_row, "|"))
 			writer.Write(row)
 			writer.Flush() // Data flush
 		}
