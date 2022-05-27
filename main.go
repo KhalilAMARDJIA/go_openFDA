@@ -10,6 +10,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/jdkato/prose/v2"
 )
 
 const baseURL = "https://api.fda.gov/device/event.json?search="
@@ -155,6 +157,16 @@ type openFDA_event_schema struct {
 	} `json:"results"`
 }
 
+type Dat struct {
+	Reportnumber     string
+	Datereceived     string
+	Manufacturername string
+	Brandname        string
+	Patientproblems  string
+	Productproblems  string
+	Text             string
+}
+
 func query_to_json(query string) []byte {
 
 	// openFDA API request
@@ -175,8 +187,7 @@ func query_construct() string {
 	fmt.Println("Enter openFDA query: ")
 	var query string
 	fmt.Scanln(&query)
-	var full_query string
-	full_query = baseURL + query + "&limit=" + limit
+	var full_query string = baseURL + query + "&limit=" + limit
 	return full_query
 }
 
@@ -194,12 +205,10 @@ func find_meta_data() (string, int, int) {
 	}
 
 	if content.Meta.Results.Total <= limit_int {
-		var skips_required int
-		skips_required = 0
+		var skips_required int = 0
 		return meta_query, skips_required, limit_int // skips_required variable
 	} else {
-		var skips_required int
-		skips_required = content.Meta.Results.Total / limit_int
+		var skips_required int = content.Meta.Results.Total / limit_int
 		return meta_query, skips_required, limit_int // skips_required variable
 
 	}
@@ -227,8 +236,7 @@ func get_data() []openFDA_event_schema {
 	return all_content
 }
 
-func main() {
-
+func data_to_csv() {
 	data := get_data()
 
 	csvFile, err := os.Create("./output_data/openFDA_data.csv")
@@ -263,5 +271,63 @@ func main() {
 			writer.Write(row)
 			writer.Flush() // Data flush
 		}
+	}
+}
+
+func ReadCsv(filename string, sep rune) ([][]string, error) {
+
+	// Open CSV file
+	f, err := os.Open(filename)
+	if err != nil {
+		return [][]string{}, err
+	}
+	defer f.Close()
+
+	reader := csv.NewReader(f)
+
+	reader.Comma = sep
+
+	reader.FieldsPerRecord = -1
+
+	lines, err := reader.ReadAll()
+	// Read File into a Variable
+
+	if err != nil {
+		return [][]string{}, err
+	}
+	return lines, nil
+}
+
+func proseSent(text string) []string {
+	// Create a new document with the default configuration:
+	doc, err := prose.NewDocument(text)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Iterate over the doc's sentences:
+	var sentences []string
+	sents := doc.Sentences()
+	for _, sent := range sents {
+		sentences = append(sentences, sent.Text) // TO DO
+	}
+	return sentences
+}
+
+func main() {
+	data_to_csv()
+
+	lines, err := ReadCsv("./output_data/openFDA_data.csv", '\t')
+	if err != nil {
+		panic(err)
+	}
+
+	for _, line := range lines {
+		data := Dat{
+			Reportnumber: line[0],
+			Text:         line[6],
+		}
+		fmt.Println(proseSent(data.Text))
 	}
 }
