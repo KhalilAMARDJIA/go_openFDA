@@ -10,6 +10,11 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"fyne.io/fyne"
+	"fyne.io/fyne/app"
+	"fyne.io/fyne/container"
+	"fyne.io/fyne/widget"
 )
 
 const baseURL = "https://api.fda.gov/device/event.json?search="
@@ -172,16 +177,46 @@ func query_to_json(query string) []byte {
 
 func query_constructed() string {
 	// query construct
-	fmt.Println("Enter openFDA query: ")
-	var query string
-	fmt.Scanln(&query)
-	var full_query string = baseURL + query + "&limit=" + limit
-	fmt.Println(full_query)
-	return full_query
+	app := app.New()
+	window := app.NewWindow("openFDA event database search")
+	window.Resize(fyne.NewSize(800, 100))
+	input := widget.NewEntry()
+	input.SetPlaceHolder("Query")
+
+	content := container.NewVBox(input, widget.NewButton("Searchg", func() {
+
+		var full_query string = baseURL + input.Text + "&limit=" + limit
+
+		// Write query to file
+		f, err := os.Create("Last_query.txt")
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		defer f.Close()
+
+		_, err2 := f.WriteString(full_query)
+
+		if err2 != nil {
+			log.Fatal(err2)
+		}
+	}))
+
+	window.SetContent(content)
+	window.ShowAndRun()
+	return "search"
 }
 
 func find_meta() (string, int, int) {
-	meta_query := query_constructed()
+	query_constructed()
+
+	last_query_file, err := os.ReadFile("Last_query.txt") // Read latest query file
+	if err != nil {
+		fmt.Print(err)
+	}
+
+	meta_query := string(last_query_file)
 	responseData := query_to_json(meta_query)
 	content := openFDA_event_schema{}
 	json.Unmarshal([]byte(responseData), &content)
