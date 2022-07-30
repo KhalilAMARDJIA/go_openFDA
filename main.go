@@ -180,10 +180,11 @@ func query_constructed() string {
 	app := app.New()
 	window := app.NewWindow("openFDA event database search")
 	window.Resize(fyne.NewSize(800, 100))
+	window.CenterOnScreen()
 	input := widget.NewEntry()
 	input.SetPlaceHolder("Query")
 
-	content := container.NewVBox(input, widget.NewButton("Searchg", func() {
+	content := container.NewVBox(input, widget.NewButton("Search", func() {
 
 		var full_query string = baseURL + input.Text + "&limit=" + limit
 
@@ -205,6 +206,7 @@ func query_constructed() string {
 
 	window.SetContent(content)
 	window.ShowAndRun()
+	window.Close()
 	return "search"
 }
 
