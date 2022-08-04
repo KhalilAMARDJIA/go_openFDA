@@ -206,7 +206,6 @@ func query_constructed() string {
 
 	window.SetContent(content)
 	window.ShowAndRun()
-	window.Close()
 	return "search"
 }
 
